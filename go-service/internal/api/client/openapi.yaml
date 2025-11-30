@@ -1,0 +1,196 @@
+openapi: 3.0.3
+info:
+  title: Distributed Job Queue API
+  version: 1.0.0
+  description: API for managing tasks and workers in a distributed job queue system
+
+servers:
+  - url: http://localhost:8080
+    description: Local server
+
+paths:
+  /tasks:
+    post:
+      summary: Submit a new task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskRequest"
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+    get:
+      summary: List tasks with optional filters
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: Filter by task status
+        - in: query
+          name: priority
+          schema:
+            type: integer
+          description: Filter by task priority
+      responses:
+        "200":
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TaskResponse"
+
+  /tasks/{taskId}:
+    get:
+      summary: Get task details
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+          description: Task identifier
+      responses:
+        "200":
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "404":
+          description: Task not found
+    delete:
+      summary: Cancel a task
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+          description: Task identifier
+      responses:
+        "204":
+          description: Task cancelled successfully
+        "404":
+          description: Task not found
+
+  /workers/register:
+    post:
+      summary: Register or heartbeat a worker node
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkerRegisterRequest"
+      responses:
+        "200":
+          description: Worker registered successfully
+
+  /workers:
+    get:
+      summary: List active workers
+      responses:
+        "200":
+          description: List of active workers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkerInfo"
+
+  /queue/status:
+    get:
+      summary: Get queue health and metrics
+      responses:
+        "200":
+          description: Queue status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueStatus"
+
+components:
+  schemas:
+    TaskRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        payload:
+          type: object
+          description: Task-specific payload
+        priority:
+          type: integer
+          description: Task priority (lower number = higher priority)
+      required:
+        - name
+        - payload
+
+    TaskResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          description: Task status (pending, running, completed, failed)
+        priority:
+          type: integer
+        result:
+          type: object
+          nullable: true
+          description: Task result if completed
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    WorkerRegisterRequest:
+      type: object
+      properties:
+        workerId:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+      required:
+        - workerId
+
+    WorkerInfo:
+      type: object
+      properties:
+        workerId:
+          type: string
+        lastSeen:
+          type: string
+          format: date-time
+        capabilities:
+          type: array
+          items:
+            type: string
+
+    QueueStatus:
+      type: object
+      properties:
+        queueLength:
+          type: integer
+        processingRate:
+          type: number
+          format: float
+        errors:
+          type: integer

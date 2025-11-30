@@ -1,0 +1,5 @@
+package: generated
+generate:
+  client: true
+  models: false  # don't duplicate models; reuse from types.gen.go
+output: ./generated/client.gen.go
